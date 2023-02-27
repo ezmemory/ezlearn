@@ -1,5 +1,9 @@
 .. _GDB_init:
 
+originally from:
+
+https://www.cse.unsw.edu.au/~learn/debugging/_sources/modules/gdb_init_file.rst.txt
+
 **************************
 GDB - Init File
 **************************
