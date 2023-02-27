@@ -1,0 +1,130 @@
+.. _basic_use:
+
+****************
+GDB - Basic Use
+****************
+
+.. topic:: Learning Outcome
+
+    Be able to compile programs that are suitable for debugging with GDB, start a GDB session, run the program and quit the session.
+
+.. topic:: Introduction
+
+    In order to use any GDB commands covered in this tutorial, the
+    program must first be compiled with the *-g* flag so that the
+    generated executable contains the debugging information GDB requires to
+    interpret the content.
+
+    Once an executable is compiled for debugging, it can be started
+    inside a GDB session, and various GDB debugging commands can then
+    be applied.
+
+.. topic:: Applicable subjects
+
+    COMP1521, COMP2521
+
+----
+
+Compile for GDB
+================
+In order to use GDB, files must be compiled with a -g flag using
+either the *dcc* or *gcc* C compilers: ::
+
+    $ dcc -g -o <file> <file.c>
+    $ gcc -g <any other flags e.g. -Wall> -o <file> <file.c>
+
+Start a GDB Session
+====================
+Start a debugging session for a program using GDB: ::
+    
+    $ gdb <program_name>
+
+
+run
+====
+Run the program while in GDB. ::
+
+    (gdb) run
+
+If you have command line arguments, instead run with: ::
+
+    (gdb) run <arg1> <arg2> ... <arg n>
+
+If you want to use a file for input, you can run with: ::
+
+    (gdb) run < <data>
+
+quit
+=====
+Stop the debugging session. ::
+
+    (gdb) quit
+
+.. note::  GDB commands often have shortcuts. For example, run becomes *r* and quit becomes *q*.
+
+
+
+----
+
+Example
+=======
+
+In this example we will explore the basic functionality of GDB by compiling factorial.c, 
+starting a GDB session for the executable produced, running the program and quitting the session. 
+We will be using factorial.c for the next few modules, and by the end of the
+breakpoints, viewing data, and navigating your program modules, we will have found the bug in the program. 
+
+:download:`factorial.c<factorial.c>`
+
+.. literalinclude:: factorial.c
+    :language: c
+    :linenos:
+    :caption: factorial.c
+
+	      
+When we run the above code without gdb, the following output is given: ::
+
+    The factorial of 5 is 120.
+    The factorial of 17 is -288522240.
+
+We know that the value of 17! should be 355,687,428,096,000 not -288522240, so something has gone amiss!
+We can use gdb to find out what went wrong. 
+
+
+To compile this code for gdb, you can use either gcc or dcc.  In this
+module, we will be using gcc as dcc has deeper code analysis and
+diagnostics so that in the case of this program, dcc will tell us
+exactly where it the problem is (this is why COMP1511 students are
+encouraged to use dcc).
+
+Compile with gcc: ::
+
+    $ gcc -Wall -g -o factorial factorial.c
+
+Start a gdb session for factorial: ::
+
+    $ gdb factorial
+
+Run the code within gdb: ::
+
+    (gdb) run
+
+The program will run as it usually does and gives output similar to the following: ::
+   
+    Starting program: code/factorial 
+    The factorial of 5 is 120.
+    The factorial of 17 is -288522240.
+    [Inferior 1 (process 96) exited normally]
+
+Even though the program has finished, we are still in GDB. Exit your debugging session using: ::
+    
+    (gdb) quit
+
+Note that GDB has not yet helped to find the problem with the code. To
+inspect the programs execution more closely, we need to use *breakpoints* to stop the program before it ends.
+
+
+.. moduleauthor:: Liz Willer <e.willer@unsw.edu.au>
+		  
+:Date: 2020-01-15
+

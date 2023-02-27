@@ -1,0 +1,245 @@
+******************************
+GDB - Conditional Breakpoints
+******************************
+
+.. topic:: Learning Outcome
+
+    Use conditional breakpoints to conditionally stop program execution.
+    
+    
+.. topic:: Introduction
+
+    Breakpoints normally stop the execution every time a certain line or function is reached.
+    However, using the *condition* keyword, a breakpoint will only be activated if a certain condition is true. This can avoid stopping at breakpoints until something of interest is true.
+    
+
+.. topic:: Applicable subjects
+
+    COMP1521, COMP2521, COMP3231
+
+----
+
+
+Set a breakpoint
+==================
+The first step in setting a conditional breakpoint is to set a breakpoint as you normally would.
+I.e. ::
+
+    (gdb) break <file_name> : <line_number>
+    (gdb) break <function_name>
+
+This will set a breakpoint and output the breakpoint number
+
+Check breakpoints
+=====================
+If you forget which breakpoints you can add a condition to, you can list the breakpoints using: ::
+    
+    (gdb) info breakpoints
+
+Set a condition for a breakpoint
+==================================
+Set an existing breakpoint to only break if a certain condition is true: ::
+
+    (gdb) condition <breakpoint_number> condition
+
+The condition is written in syntax similar to c using operators such as *==* *!=* and *<*.
+
+Remove a condition from a breakpoint
+======================================
+If no condition is required on a breakpoint anymore 
+(i.e. the breakpoint should always break upon being reached),
+the breakpoint can be removed using: ::
+
+    (gdb) condition <breakpoint_number>
+    
+----
+
+Example
+=======
+
+We have a factorial program which calculates the factorials of 5 and 17.
+When we run the program the factoiral of 5 is correct but the factorial of 17 is incorrect.
+Our factorial function is iterative, 
+it is helpful to view the values of f and i as they change and compare the two, 
+since with our algorithm, f = i!.
+Since we know that the value is correct up until 5! we can skip checking the values up until i = 6.
+
+
+    $ ./factorial
+    The factorial of 5 is 120.
+    The factorial of 17 is -288522240.
+
+
+
+
+:download:`factorial.c<factorial.c>`
+
+.. literalinclude:: factorial.c
+    :language: c
+    :linenos:
+    :caption: factorial.c
+
+
+
+
+
+
+
+We can compile with the debug flag and run our program with gdb: ::
+
+    $ gcc -g -o factorial factorial.c
+    $ gdb factorial
+    Reading symbols from factorial...done.
+
+
+The output of the factorial function is correct when n = 5, 
+so we don't need to check the values of f for i less than 5.
+
+So we want to put a breakpoint on line 28 (after the calculation of f for the corresponding value of i), 
+that only is active for i > 5.
+
+::
+
+    $ gdb factorial
+    Reading symbols from factorial...done.
+    (gdb) br 28
+    Breakpoint 1 at 0x11bf: file factorial.c, line 28.
+    (gdb) condition 1 i > 5
+
+Now we need continue, and list the local variables until we notice that f != i!
+See the table below for a comparison of the f and i!::
+
+    (gdb) r
+    Starting program: ~/factorial 
+    The factorial of 5 is 120.
+
+    Breakpoint 1, factorial (n=17) at factorial.c:28
+    28			i++;
+    (gdb) info locals
+    f = 720
+    i = 6
+    (gdb) c
+    Continuing.
+
+    Breakpoint 1, factorial (n=17) at factorial.c:28
+    28			i++;
+    (gdb) info locals
+    f = 5040
+    i = 7
+    (gdb) c
+    Continuing.
+
+    Breakpoint 1, factorial (n=17) at factorial.c:28
+    28			i++;
+    (gdb) info locals
+    f = 40320
+    i = 8
+    (gdb) c 
+    Continuing.
+
+    Breakpoint 1, factorial (n=17) at factorial.c:28
+    28			i++;
+    (gdb) info locals
+    f = 362880
+    i = 9
+    (gdb) c
+    Continuing.
+
+    Breakpoint 1, factorial (n=17) at factorial.c:28
+    28			i++;
+    (gdb) info locals
+    f = 3628800
+    i = 10
+    (gdb) c
+    Continuing.
+
+    Breakpoint 1, factorial (n=17) at factorial.c:28
+    28			i++;
+    (gdb) info locals
+    f = 39916800
+    i = 11
+    (gdb) c 
+    Continuing.
+
+    Breakpoint 1, factorial (n=17) at factorial.c:28
+    28			i++;
+    (gdb) info locals
+    f = 479001600
+    i = 12
+    (gdb) c 
+    Continuing.
+
+    Breakpoint 1, factorial (n=17) at factorial.c:28
+    28			i++;
+    (gdb) info locals
+    f = 1932053504
+    i = 13
+    (gdb) 
+
+
+When i = 13, f should be 6,227,020,800, but it is not.
+
+
+Instead of increasing, f has decreased. 
+Therefore, we know that our function works up until f reaches a certain very large number. 
+It then decreases and later even becomes negative.
+This seems consistent with integer overflow.
+
+A quick google reveals that depending on the computer, the range of an integer is either -32,768 to 32,767 or -2,147,483,647 to 2,147,483,647.
+The function stops working when f is between 479,001,600 and
+6,227,020,800 which is conistent with the 2,147,483,647 integer
+limit. The variable can't store a number larger than the maximum
+integer size.
+
+Several options are available to fix this issue:
+
+* A larger data type such as a long long could be used
+* If the program should never be used with a value of n larger than 12, error handling can be added and the result can be left as an integer.
+
+ 
+
++------------+---------------------+---------------------+
+|     i      |          i!         |          f          |
++============+=====================+=====================+
+| 0          | 1                   | 1                   |
++------------+---------------------+---------------------+
+| 1          | 1                   | 1                   |
++------------+---------------------+---------------------+
+| 2          | 2                   | 2                   |       
++------------+---------------------+---------------------+
+| 3          | 6                   | 6                   |
++------------+---------------------+---------------------+
+| 4          | 24                  | 24                  |        
++------------+---------------------+---------------------+
+| 5          | 120                 | 120                 |
++------------+---------------------+---------------------+
+| 6          | 720                 | 720                 |        
++------------+---------------------+---------------------+
+| 7          | 5,040               | 5,040               |
++------------+---------------------+---------------------+
+| 8          | 40,320              | 40,320              |        
++------------+---------------------+---------------------+
+| 9          | 362,880             | 362,880             |
++------------+---------------------+---------------------+
+| 10         | 3,628,800           | 3,628,800           |        
++------------+---------------------+---------------------+
+| 11         | 39,916,800          | 39,916,800          |
++------------+---------------------+---------------------+
+| 12         | 479,001,600         | 479,001,600         |         
++------------+---------------------+---------------------+
+| 13         | 6,227,020,800       | 1932053504 (wrong)  |
++------------+---------------------+---------------------+
+| 14         | 87,178,291,200      | don't care yet      |
++------------+---------------------+---------------------+
+| 15         | 1,307,674,368,000   | don't care yet      |
++------------+---------------------+---------------------+
+| 16         | 20,922,789,888,000  | don't care yet      |
++------------+---------------------+---------------------+
+| 17         | 355,687,428,096,000 | -288522240 (wrong)  |
++------------+---------------------+---------------------+
+
+
+
+.. moduleauthor:: Liz Willer <e.willer@unsw.edu.au>
+
+:Date: 2020-01-30

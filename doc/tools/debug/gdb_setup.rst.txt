@@ -1,0 +1,122 @@
+*********************
+GDB - Basic Setup
+*********************
+
+.. topic:: Learning Outcome
+
+    Able to confirm GDB is available in your command line environment, and install
+    it if required. (Optionally configure VSCode to use GDB for
+    debugging) 
+
+.. topic:: Applicable subjects
+
+    COMP1521, COMP2521
+
+    Note: COMP3231 has its own specific setup
+
+----
+
+Check if GDB is installed
+=========================
+
+The *which* command can be used to test if gdb is available in your
+environment. It returns the path where gdb is installed as shown
+below. If it returns nothing, gdb is not in your environment, so
+continue to the next section. ::
+
+    $ which gdb
+    /usr/bin/gdb
+    $
+
+GDB on Commandline Setup (Linux and WSL)
+=========================================
+
+GDB should be already installed on the CSE systems.
+
+If it is not installed on your linux distribution, run the following commands: ::
+    
+    $ sudo apt-get update
+    $ sudo apt-get install gdb
+
+
+GDB in VSCode Setup
+====================
+
+.. comments
+   This section is pretty terse. Ideally we should split is off and
+   include include screenshots of going through the setup
+
+VSCode can be used as front end to GDB that provides a convenient environment to execute and debug your code directly in the editor.
+
+Note some level of VSCode familiarity is assumed in the following instructions.
+
+1. Install the C/C++ Intellisense extension
+
+2. Add the following two JSON files to the .vscode directory. WSL users may have to change these files.
+
+.. code-block:: json
+    :linenos:
+    :caption: launch.json
+
+
+    {
+        "version": "0.2.0",
+        "configurations": [
+            {
+                "name": "gcc build and debug active file",
+                "type": "cppdbg",
+                "request": "launch",
+                "program": "${fileDirname}/${fileBasenameNoExtension}", 
+                "args": [],
+                "stopAtEntry": false,
+                "cwd": "${workspaceFolder}",
+                "environment": [],
+                "externalConsole": false,
+                "MIMode": "gdb",
+                "setupCommands": [
+                    {
+                        "description": "Enable pretty-printing for gdb",
+                        "text": "-enable-pretty-printing",
+                        "ignoreFailures": true
+                    }
+                ],
+                "preLaunchTask": "gcc build active file",
+                "miDebuggerPath": "/usr/bin/gdb"
+            }
+        ]
+    }
+
+.. code-block:: json
+    :linenos:
+    :caption: tasks.json
+
+    {
+        "version": "2.0.0",
+        "tasks": [
+            {
+                "label": "gcc build active file",
+                "command": "gcc",
+                "args": ["-Wall", "-Werror", "-std=c99", "-g", "-o", "${fileDirname}/${fileBasenameNoExtension}", "${fileDirname}/${fileBasename}"] 
+            }
+        ]
+    }
+
+3. Now you should be able to use the debugging features in VSCode, which are found by clicking on the bug icon on the left of the screen.
+
+Mac Setup
+==========
+There are two options for mac users:
+
+1. Install using brew
+**********************
+This is very difficult. There are instructions available online. 
+
+2. Use lldb
+************
+lldb is a debugger with similar functionality to gdb.
+It comes pre-installed on mac computers.
+A conversion table from gdb to lldb commands is available `here <https://lldb.llvm.org/use/map.html>`_
+
+.. moduleauthor:: Liz Willer <e.willer@unsw.edu.au>
+		  
+:Date: 2020-01-15

@@ -1,0 +1,248 @@
+.. _Valgrind:
+
+**********
+Valgrind
+**********
+
+.. topic:: Learning Outcome
+
+    Compile for use with Valgrind, and run with Valgrind to debug memory errors and leaks.
+
+.. topic:: Introduction
+
+    Valgrind is a tool used for debuging memory leaks and memory errors. 
+
+.. topic:: Applicable subjects
+
+    COMP1511, COMP1521, COMP2521
+
+    ----
+
+
+Installing Valgrind
+======================
+Valgrind is installed on the CSE systems. 
+If it is not installed on your computer, run the command below: ::
+
+    $ sudo apt install valgrind
+
+
+Compiling for use with Valgrind
+================================
+To use valgrind, compile with the -g flag: ::
+
+    $ gcc -g -o <program> <program.c>
+
+
+Checking for Memory leaks
+============================
+Valgrind can be used to check if you have allocated memory that you haven't freed. 
+Compile for use with valgrind then run: ::
+
+    $ valgrind --leak-check=full ./<program>
+
+In the example section, there is an example of how to analyze the output this gives.
+
+
+Checking for invalid memory access
+=====================================
+Valgrind can help you debug memory error such as a heap overflow, access to uninitialized memory, or NULL pointer dererference. 
+Run the program in valgrind: ::
+
+    $ valgrind ./<program>
+
+If you have a segmentation fault and want to find out what went wrong, without opening up GDB, you can use Valgrind.
+
+In the example section, there is an example of analysing the output this gives.
+
+
+----
+
+Examples
+========
+
+Example for invalid memory access
+**************************************
+
+When a segmentation fault is generated, often the only information provided will be "Segmentation fault".
+In this example, we will be using Valgrind to generate more information about the segfault produced by broken_linked_list.c
+
+
+.. literalinclude:: broken_linked_list.c
+    :language: c
+    :linenos:
+    :caption: broken_linked_list.c
+
+
+When this program is compiled and run, a segmentation fault occurs: ::
+
+    $ gcc -g -o broken_linked_list broken_linked_list.c
+    ./broken_linked_list
+    Segmentation fault (core dumped)
+
+
+When a segmentation fault occurs, we can get some more information by running the program using Valgrind: ::
+
+    $ valgrind ./broken_linked_list
+    ==49== Memcheck, a memory error detector
+    ==49== Copyright (C) 2002-2015, and GNU GPL'd, by Julian Seward et al.
+    ==49== Using Valgrind-3.11.0 and LibVEX; rerun with -h for copyright info
+    ==49== Command: ./broken_linked_list
+    ==49==
+    ==49== error calling PR_SET_PTRACER, vgdb might block
+    ==49== Invalid read of size 4
+    ==49==    at 0x40071E: print_list (broken_linked_list.c:52)
+    ==49==    by 0x400633: main (broken_linked_list.c:19)
+    ==49==  Address 0x0 is not stack'd, malloc'd or (recently) free'd
+    ==49==
+    ==49==
+    ==49== Process terminating with default action of signal 11 (SIGSEGV)
+    ==49==  Access not within mapped region at address 0x0
+    ==49==    at 0x40071E: print_list (broken_linked_list.c:52)
+    ==49==    by 0x400633: main (broken_linked_list.c:19)
+    ==49==  If you believe this happened as a result of a stack
+    ==49==  overflow in your program's main thread (unlikely but
+    ==49==  possible), you can try to increase the size of the
+    ==49==  main thread stack using the --main-stacksize= flag.
+    ==49==  The main thread stack size used in this run was 8388608.
+    0->1->2->3->4->5->6->==49== 
+    ==49== HEAP SUMMARY:
+    ==49==     in use at exit: 112 bytes in 7 blocks
+    ==49==   total heap usage: 8 allocs, 1 frees, 624 bytes allocated
+    ==49==
+    ==49== LEAK SUMMARY:
+    ==49==    definitely lost: 0 bytes in 0 blocks
+    ==49==    indirectly lost: 0 bytes in 0 blocks
+    ==49==      possibly lost: 0 bytes in 0 blocks
+    ==49==    still reachable: 112 bytes in 7 blocks
+    ==49==         suppressed: 0 bytes in 0 blocks
+    ==49== Rerun with --leak-check=full to see details of leaked memory
+    ==49==
+    ==49== For counts of detected and suppressed errors, rerun with: -v
+    ==49== ERROR SUMMARY: 1 errors from 1 contexts (suppressed: 0 from 0)
+    Segmentation fault (core dumped)
+ 
+
+The important lines from this are explored below: 
+
+|
+
+::
+
+    Invalid read of size 4
+
+This line tells us that we tried to read 4 bytes, (which we know is probably an integer, a pointer on a 32 bit machine, or 4 characters). 
+
+|
+
+::
+
+    at 0x40071E: print_list (broken_linked_list.c:52)
+    by 0x400633: main (broken_linked_list.c:19)
+
+These lines are a stack trace from the moment that the segfault occurred. They tell us that it was on line 52 in broken_linked_list.c.
+
+| 
+
+We then look at the function print_list on line 52 for the line on which this invalid read occurs: ::
+    
+    52 printf("%d->", curr->data);
+
+|
+
+Valgrind even tells us which invalid address was accessed: ::
+
+    Address 0x0 is not stack'd, malloc'd or (recently) free'd
+
+This means that curr was 0x0 (NULL), which was dereferenced and caused a segmenatation fault. 
+
+|
+
+If you need more debugging power to discover the issue, the GDB module on core dumps covers this example in GDB.   
+
+
+The other lines in the valgrind output refer to memory leaks. 
+
+Naturally, if the program segmentation faults before the memory is freed there will be memory leaks.
+However, even if this program didn't crash, there would still be memory leaks because memory is allocated but never freed.
+Let's fix the segfault and see what information Valgrind can offer on these memory leaks.
+
+Example for memory leaks
+*******************************
+In this example we will use Valgrind to check for memory leaks in broken_linked_list.c.
+
+.. literalinclude:: broken_linked_list.c
+    :language: c
+    :linenos:
+    :caption: broken_linked_list.c
+
+
+Compile the program with the debugging flag: ::
+
+    $ gcc -g -o linked_list linked_list.c
+
+    $ valgrind --leak-check=full ./linked_list
+
+    ==56== Memcheck, a memory error detector
+    ==56== Copyright (C) 2002-2015, and GNU GPL'd, by Julian Seward et al.
+    ==56== Using Valgrind-3.11.0 and LibVEX; rerun with -h for copyright info
+    ==56== Command: ./linked_list
+    0->1->2->3->4->5->6->X
+    ==56== 
+    ==56== HEAP SUMMARY:
+    ==56==     in use at exit: 112 bytes in 7 blocks
+    ==56==   total heap usage: 8 allocs, 1 frees, 624 bytes allocated
+    ==56==
+    ==56== 112 (16 direct, 96 indirect) bytes in 1 blocks are definitely lost in loss record 2 of 2
+    ==56==    at 0x4C2DB8F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+    ==56==    by 0x400643: create_node (linked_list.c:24)
+    ==56==    by 0x4006A5: create_list (linked_list.c:35)
+    ==56==    by 0x400617: main (linked_list.c:17)
+    ==56== 
+    ==56== LEAK SUMMARY:
+    ==56==    definitely lost: 16 bytes in 1 blocks
+    ==56==    indirectly lost: 96 bytes in 6 blocks
+    ==56==      possibly lost: 0 bytes in 0 blocks
+    ==56==    still reachable: 0 bytes in 0 blocks
+    ==56==         suppressed: 0 bytes in 0 blocks
+
+
+Let's analyse the important lines in the output: 
+
+|
+
+::
+
+    in use at exit: 112 bytes in 7 blocks
+
+This line means we lost 112 bytes in 7 blocks. 
+This corresponds to not freeing 7 nodes of 16 bytes each. 
+
+|
+
+::
+
+    definitely lost: 16 bytes in 1 blocks
+    indirectly lost: 96 bytes in 6 blocks
+
+These lines mean we directly lost the head of our linked list (1 node = 16 bytes), and indirectly lost the rest of the list.
+
+|
+
+::
+
+    at 0x4C2DB8F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+    by 0x400643: create_node (linked_list.c:24)
+    by 0x4006A5: create_list (linked_list.c:35)
+
+This is the call stack from where the memory allocation was made.
+It's helpful to know which allocation is causing the leaks if you have multiple allocations.
+
+|
+
+See if you can write a function to free this memory.
+
+
+.. moduleauthor:: Liz Willer <e.willer@unsw.edu.au>
+
+:Date: 2020-01-15

@@ -1,0 +1,105 @@
+*******************
+GDB - Viewing Data
+*******************
+
+.. topic:: Learning Outcome
+
+    Able to inspect variables (program state) in GDB using the *print* and *info locals* commands. 
+
+.. topic:: Introduction
+
+    In order to check where the program stops behaving as it should,
+    GDB allows you to check that the values of the variables are as
+    you expect. Commands such as print and info locals allow us to do
+    this.
+
+    GDB commands allow us to view the state of the program without
+    have to insert *printf* C code statements and recompile the program
+    itself, which can be much more time consuming. Also, sometimes *printf* statements alter the behaviour of the program to hide the bug.   
+
+.. topic:: Applicable subjects
+
+    COMP1521, COMP2521, COMP3231
+
+----
+
+print
+================
+View simple data including strings, integers, structs, or a statically declared arrays (1D or 2D). ::
+
+    (gdb) print <variable_name>
+
+Printing a dynamically allocated array, linked lists and various other data structures is somewhat more difficult and is covered in the debugging data structures section.
+
+info locals
+====================
+Print all local variables excluding the arguments passed into the function. ::
+    
+    (gdb) info locals
+
+info args
+============
+Print the arguments passed into the function. ::
+    
+    (gdb) info args
+
+----
+
+Example
+=======
+
+So far we have used GDB to set breakpoints and run our program, 
+but when debugging, we want to be able to view the state of the program.
+We can use print and info locals to print out the state of our factorial.c program as it runs.
+
+
+:download:`factorial.c<factorial.c>`
+
+.. literalinclude:: factorial.c
+    :language: c
+    :linenos:
+    :caption: factorial.c
+
+When we run the above code without gdb, the following output is given: ::
+
+    The factorial of 5 is 120.
+    The factorial of 17 is -288522240.
+
+We know that the value of 17! should be 355,687,428,096,000 not -288522240, so something has gone amiss!
+We can use gdb to find out what went wrong. 
+
+.. topic:: Recap
+
+    In the previous modules we compiled the code for use with GDB, started a gdb session, set a breakpoint on line 15 and ran the code using: ::
+
+        $ gcc -Wall -g -o factorial factorial.c
+        $ gdb factorial
+
+        (gdb) break 15
+        (gdb) run
+
+
+
+The program will stop on line 15, which means the function hasn't been called yet.
+
+At this stage of execution, we have 2 variables we can look at: f and n. Let's print them out.::
+    
+    (gdb) print f
+    $1 = 120
+    (gdb) print n
+    $2 = 17
+
+Alternatively we could get the same information using *info locals* ::
+
+    (gdb) info locals
+    n = 17
+    f = 120
+
+Since we have already printed these values in the normal execution of the program, this doesn't help us much. 
+In order to print out any useful values we need to learn how to move through our program in gdb.
+
+.. moduleauthor:: Liz Willer <e.willer@unsw.edu.au>
+
+:Date: 2020-01-15
+
+

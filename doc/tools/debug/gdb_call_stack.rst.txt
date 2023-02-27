@@ -1,0 +1,248 @@
+.. _call_stack:
+
+*****************
+GDB - Call Stack
+*****************
+
+.. topic:: Learning Outcome
+
+    Able to view and traverse the function call stack using the *where*, *up*, *down* and *frame* commands. 
+
+.. topic:: Introduction
+
+    In order to debug programs with functions (i.e. most programs), it is helpful to inspect the variables of all functions in the current call stack, i.e. the functions called to get to the current point in the program.
+
+    GDB can only directly inspect local variables of the current function. In order to inspect the local variables of the function(s) that called the current function, we need to tell GDB to change to the stack frame of the calling function.
+
+
+.. topic:: Applicable subjects
+
+    COMP1521, COMP2521, COMP3231
+
+----
+
+Introduction to the Call Stack
+===================================
+
+There are several regions of memory including the code, data, heap and call stack (see figure 1).
+We will be focusing on the call stack.
+
+The call stack is comprised of stack frames. Stack frames are regions of memory allocated on the stack to hold the local variables of functions each time they are called.  When one function calls another, a new stack frame is allocated and placed on top of the current function's stack frame.  When a function returns, its stack frame is de-allocated.
+
+When debugging using GDB, we must be in a specific stack frame to access particular local variables of the code.
+
+We will use the simple C program *call_stack_explanation.c* 
+to explore the concept of stack frames and local variables.
+
+:download:`call_stack_explanation.c<call_stack_explanation.c>`
+
+.. literalinclude:: call_stack_explanation.c
+    :language: c
+    :linenos:
+    :caption: call_stack_explanation.c
+
+For a visual representation of the memory (including the stack) of this program, see figure 1.
+
+The execution of the code begins in *main()*, so a stack frame for *main()* is created. 
+This frame contains the local variables *a* and *b*, 
+so these are the only variables we can access in this frame.
+
+Then on line 8, a call is made to the *get_my_number_function()*,
+so a new stack frame is created
+and placed on top of the calling stack frame.
+Within this frame, we can access the local variables c, d, and e.
+We can't, however, access a and b because they are within *main()*'s stack frame.
+After the *return* within *get_my_number_function()*, its stack frame is destroyed, 
+and only *main()*'s frame remains.
+
+
+
+.. image:: stack_diagram.jpg
+    :scale: 100%
+
+Figure 1: Memory diagram of call_stack_explanation.c
+    
+
+where
+==========
+Print out the call stack including files and line numbers.::
+    
+    (gdb) where
+
+Helpful to see the function calling sequence of how execution got here, and if you ever get lost in the call stack.
+       
+
+
+up
+====
+Go up the stack (i.e. go to the line that called the function you are currently in).
+Optionally you can specify the number of frames you wish to go up. ::
+
+    (gdb) up
+    (gdb) up <n_frames>
+
+
+
+down
+=====
+Go down the stack (i.e. go to the line that is currently being executed inside the frame that has been called by the current frame).
+Optionally you can specify the number of frames you wish to go down. ::
+
+    (gdb) down
+    (gdb) down <n_frames>
+
+
+frame
+=======
+Go to a particular frame number. 
+You can find out the frame number using where. ::
+
+    (gdb) frame <frame_number>
+
+
+----
+
+Example
+========
+
+A common example of when we would need to navigate the call stack within GDB
+is if execution stops within library code. We can use, the *where*, *up* and *frame*
+commands to inspect variables within code that we wrote.
+
+:download:`infinite_linked_list.c<infinite_linked_list.c>`
+
+.. literalinclude:: infinite_linked_list.c
+    :language: c
+    :linenos:
+    :caption: infinite_linked_list.c
+
+
+.. note::
+
+    It is assumed that you have the knowledge introduced in the Basic Use, Breakpoints, Viewing Data and Execution modules. 
+
+If we compile and run the above code the following output is produced: ::
+
+    $ gcc -g -o corrupted_linked_list corrupted_linked_list.c
+    ./corrupted_linked_list
+    0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0
+    **ctrl + c**
+    
+We quickly recognize that this is an infinite loop so we stop the execution.
+
+
+We wanted the following output: ::
+    
+    ./corrupted_linked_list
+    0->1->2->3->4->5->6->X
+
+Instead, an infinite linked list of zeros was printed. 
+We want to know inspect the infinite loop, so we run the program and stop the infinite loop in GDB: ::
+
+    $ gdb corrupted_linked_list
+    (gdb) run
+    0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0
+    **ctrl + c**
+    Program received signal SIGINT, Interrupt.
+    0x00007fffff1272c0 in __write_nocancel () at ../sysdeps/unix/syscall-template.S:84
+    84      ../sysdeps/unix/syscall-template.S: No such file or directory.
+
+The program stopped on line 84 in a file called syscall_template (it will likely be a different place for you as it depends on timing of your **ctrl + c**). 
+It is unlikely that the bug was caused by library or system software, so we look at the call stack to see which of our functions called the library:  ::
+
+
+    (gdb) where
+    #0  0x00007fffff1272c0 in __write_nocancel () at ../sysdeps/unix/syscall-template.S:84
+    #1  0x00007fffff0a8bff in _IO_new_file_write (f=0x7fffff3f5620 <_IO_2_1_stdout_>, data=0x6020f0, n=512) at fileops.c:1263
+    #2  0x00007fffff0aa409 in new_do_write (to_do=512, 
+        data=0x6020f0 "0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0-"..., fp=0x7fffff3f5620 <_IO_2_1_stdout_>) at fileops.c:518
+    #3  _IO_new_do_write (fp=0x7fffff3f5620 <_IO_2_1_stdout_>,
+        data=0x6020f0 "0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0->0-"..., to_do=512) at fileops.c:494
+    #4  0x00007fffff0a947d in _IO_new_file_xsputn (f=0x7fffff3f5620 <_IO_2_1_stdout_>, data=<optimised out>, n=2) at fileops.c:1331
+    #5  0x00007fffff07d92d in _IO_vfprintf_internal (s=0x7fffff3f5620 <_IO_2_1_stdout_>, format=<optimised out>, ap=ap@entry=0x7ffffffedf08) at vfprintf.c:1663
+    #6  0x00007fffff085899 in __printf (format=<optimised out>) at printf.c:33
+    #7  0x000000000040071b in print_list (list=0x602010) at corrupted_linked_list.c:50
+    #8  0x0000000000400628 in main () at corrupted_linked_list.c:17
+
+The output you get will probably look similar (but not exactly the same) to the above.
+
+From this we know that main() (frame #8) called print_list() (frame #7) which called __printf (frame #6), which called a whole bunch of things in the system libraries. It's unlikely our issue is in the system libraries (frames #6 to #0), it's more likely an issue with what our code passes the libraries.
+
+We'd like to know more about the state of the code in the lowest frame number which contains code we wrote. 
+In this case, it is frame #7 which is a frame for the print_list() function (it might be a different frame number for you).
+
+To get to this frame we could use the *up* command: ::
+
+    (gdb) up
+    #1  0x00007fffff0a8bff in _IO_new_file_write (f=0x7fffff3f5620 <_IO_2_1_stdout_>, data=0x6020f0, n=512) at fileops.c:1263
+    1263    fileops.c: No such file or directory.
+
+Using up once takes us from frame #0 to frame #1, however, this becomes tedious so we can just specify the frame we want (in this instance we want frame #7): ::
+
+    (gdb) frame 7
+    #7  0x000000000040071b in print_list (list=0x602010) at corrupted_linked_list.c:50
+    50              printf("%d->", curr->data);
+
+
+Now we are in our own code at line 50.
+
+Let's look at the local variables: ::
+
+    (gdb) info locals
+    curr = 0x602010
+
+There is one local variable, curr, but we can't remember what type that is so we use ptype: ::
+
+    (gdb) ptype curr
+    type = struct node {
+        int data;
+        struct node *next;
+    } *
+
+It's a pointer to a struct, so to look at the values in the struct, we need to dereference it. ::
+
+    (gdb) print *curr
+    $1 = {data = 0, next = 0x602030}
+
+We can do the same for the rest of the linked list: ::
+
+    (gdb) print *(curr->next)
+    $2 = {data = 1, next = 0x602050}
+    (gdb) print *(curr->next->next)
+    $3 = {data = 2, next = 0x602070}
+    (gdb)
+
+So far everything looks as it should. We know so far that the list looks like the following: ::
+
+    0->1->2->...
+
+So if the structure of the list is fine thus far, what went wrong?
+
+See if you can use the skills developed in the previous modules to find the bug.
+
+
+
+
+|
+|
+|
+
+
+Answer
+***********
+As this is a linked list and the curr pointer is still pointing to the head, 
+we suspect the current pointer is not being moved along. Looking at the code that is supposed to do this we see an issue: ::
+    
+    curr == curr->next;
+
+All this is doing is comparing curr to its next pointer. It is not actually setting curr to anything.
+The line should be: ::
+
+    curr = curr->next;
+
+
+
+.. moduleauthor:: Liz Willer <e.willer@unsw.edu.au>
+
+:Date: 2020-01-15
+

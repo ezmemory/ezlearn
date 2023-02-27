@@ -1,0 +1,29 @@
+*****************
+GDB - Overview
+*****************
+
+GDB is a tool available to control the progress of execution of your program, and look at the state of the program as it runs (such as the values of variables and the stack frame).
+
+In the following modules, you will learn how to:
+
+    * Compile your program for use with GDB
+    * Start a GDB session
+    * Run your code in GDB
+    * Set breakpoints
+    * Move through you code
+    * Print variables
+    * Inspect and navigate the call stack
+    * Debug a core dump with GDB
+    * Use an init file to simplify the debugging process
+    * Stop the execution when a value changes
+    * Automatically display variables
+    * Break upon certain conditions
+
+GDB is a valuable skill that will help you in many subjects, including COMP1511, COMP1521, COMP2521 and COMP3231, so the sooner you learn it, the more helpful it will be.
+
+
+
+.. moduleauthor:: Liz Willer <e.willer@unsw.edu.au>
+
+:Date: 2020-02-05
+

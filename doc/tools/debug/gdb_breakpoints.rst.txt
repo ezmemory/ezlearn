@@ -1,0 +1,104 @@
+******************
+GDB - Breakpoints
+******************
+
+.. topic:: Learning Outcome
+
+    Able to set, view and remove breakpoints using the *break*, *info break* and *delete* commands.
+    
+.. topic:: Introduction
+
+    Breakpoints are used to halt the execution of the program at a
+    specified point in the code. Once execution is halted, one can
+    inspect variables or use it as a starting point to investigate
+    potential problem sections line by line.
+
+.. topic:: Applicable subjects
+
+    COMP1521, COMP2521, COMP3231
+
+
+break
+=====
+Place a breakpoint at at a specific line number. ::
+
+    (gdb) break <filename>:<line number>
+
+Place a breakpoint at a function. ::
+
+    (gdb) break <filename>:<function>
+
+.. note::  If you only have one file, you can omit the '<filename>:'
+
+info break
+==========
+List all breakpoints (including their breakpoint number and where they are in the program). ::
+    
+    (gdb) info break
+
+delete
+=======
+Delete a breakpoint so it no longer stops a program. Use info break to find the number that corresponds to a particular breakpoint. ::
+    
+    (gdb) delete <breakpoint number>
+    
+----
+
+Example
+=======
+
+We know that our factorial.c code from the previous module produces incorrect output. 
+Let's set a breakpoint in our code, so that we can investigate what our code is doing.
+
+:download:`factorial.c<factorial.c>`
+
+.. literalinclude:: factorial.c
+    :language: c
+    :linenos:
+    :emphasize-lines: 15
+    :caption: factorial.c
+
+	      
+When we run the above code, the following output is given: ::
+
+    The factorial of 5 is 120.
+    The factorial of 17 is -288522240.
+
+We know that the value of 17! should be 355,687,428,096,000 not -288522240, so something has gone amiss!
+
+
+We  printed out both the arguments to the function, and the return value of the function (lines 13 and 15). 
+The arguments are correct but the return value is not and therefore we know that something went wrong inside the factorial function.
+Now we can use breakpoints to stop the program in this function and take a better look at what is happening.
+
+.. topic:: Recap
+    
+    In the previous module we compiled the code for use with GDB and started a GDB session. Don't run it just yet.::
+    
+        $ gcc -Wall -g -o factorial factorial.c
+        $ gdb factorial
+
+The program appears correct when 5 is passed in as a parameter to the factorial function, so we should begin our debugging where the function is called with 17 as the parameter.
+We should place a breakpoint at line 15 which is where this function is called with this value.::
+    
+    (gdb) break 15
+
+
+.. note::  When you break on a line, it doesn't execute that line yet.
+
+Next run the program: ::
+    
+    (gdb) run
+
+Instead of printing the calculated factorials of 5 and 27, as it did without the breakpoint, the program stops at line 15 and only prints the factorial of 5. ::
+    
+    The factorial of 5 is 120.
+    Breakpoint 1, main () at factorial.c:15
+    15              f = factorial(n);
+
+In order to investigate what went wrong, we need to learn to view the
+state (variables) of the program.
+
+.. moduleauthor:: Liz Willer <e.willer@unsw.edu.au>
+
+:Date: 2020-01-15
