@@ -1,5 +1,4 @@
-#learning experiences 
-memory for learning. 
+#memory for learning. 
 
 This is a site to keep my notes. 
 
